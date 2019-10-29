@@ -13,6 +13,24 @@ import ctypes
 from itertools import groupby
 from pycti import OpenCTIApiClient
 
+opencti_api_status = False
+
+
+class HealthCheck(threading.Thread):
+    def __init__(self, api):
+        self.api = api
+
+    def run(self)gyf-(e hui unjp :oàmoujklhngktoylànoçyln bn)
+        global opencti_api_status
+        logging.info('HealthCheck thread started')
+        while True:
+            opencti_api_status = self.api.health_check()
+            if opencti_api_status:
+                logging.info('OpenCTI is up, consuming messages...')
+            else:
+                logging.info('OpenCTI is down, stopping consuming messages...')
+            time.sleep(30)
+
 
 class Consumer(threading.Thread):
     def __init__(self, connector, api):
@@ -39,6 +57,7 @@ class Consumer(threading.Thread):
 
     # Callable for consuming a message
     def _process_message(self, channel, method, properties, body):
+        print(opencti_api_status)
         data = json.loads(body)
         logging.info('Processing a new message (delivery_tag=' + str(method.delivery_tag) + '), launching a thread...')
         thread = threading.Thread(target=self.data_handler, args=[data])
@@ -69,6 +88,7 @@ class Consumer(threading.Thread):
             return False
 
     def run(self):
+        global opencti_api_status
         try:
             # Consume the queue
             logging.info('Thread for queue ' + self.queue_name + ' started')
@@ -92,6 +112,10 @@ class Worker:
 
         # Check if openCTI is available
         self.api = OpenCTIApiClient(self.opencti_url, self.opencti_token)
+
+        # Start the health check
+        self.health_thread = HealthCheck(self.api)
+        self.health_thread.start()
 
         # Configure logger
         numeric_level = getattr(logging, self.log_level.upper(), None)
