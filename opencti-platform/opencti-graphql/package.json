@@ -11,6 +11,7 @@
     "migrate:add": "migrate create",
     "lint": "eslint .",
     "test": "yarn build && jest --coverage --e test",
+    "test-grakn": "yarn build && jest --e test -t 'grakn-transactions-test'",
     "clean": "babel-node ./src/database/clean.js"
   },
   "bin": {
